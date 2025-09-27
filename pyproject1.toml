@@ -1,28 +1,14 @@
-[project]
+[tool.poetry]
 name = "marketflow"
 version = "1.1.1"
 description = "Access to African, American, European and Asian market data for financial analysis, scientific study and to provide a decision-making basis to investors."
-authors = [
-    {name = "ODJO OLABIYI AUREL GEOFFROY",email = "xgeosoft@gmail.com"}
-]
+authors = ["Olabiyi Aurel Géoffroy ODJO <odjoaurel@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{ include = "marketflow", from = "src" }]
 
-homepage = "https://github.com/xgeosoft/marketflow"
-repository = "https://github.com/xgeosoft/marketflow"
-keywords = ["finance", "analysis","raw data", "market","evaluation"]
-
-
-requires-python = ">=3.12"
-dependencies = [
-    "bs4 (>=0.0.2)",
-    "requests (>=2.32.5)",
-    "numpy (>=2.3.3)",
-    "pandas (>=2.3.2)",
-    "tabulate (>=0.9.0)"
-]
-
+[tool.poetry.dependencies]
+python = ">=3.8"
 
 [build-system]
 requires = ["poetry-core"]
