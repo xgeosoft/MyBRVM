@@ -1,6 +1,6 @@
 [project]
 name = "marketflow"
-version = "1.1.1"
+version = "1.1.2"
 description = "Access to African, American, European and Asian market data for financial analysis, scientific study and to provide a decision-making basis to investors."
 authors = [
     {name = "ODJO OLABIYI AUREL GEOFFROY",email = "xgeosoft@gmail.com"}
