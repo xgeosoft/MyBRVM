@@ -8,7 +8,6 @@ import requests
 import numpy as np
 import pandas as pd
 
-
 # specific link
 from marketflow.__marketconfig__.dataextraction import brvm_data
 
@@ -23,7 +22,7 @@ class MarketData:
     def __init__(self):
         self.db_manager = DBManager()
                 
-    def getData(self, market, symbols=[], period: str = 'daily',
+    def getData(self, market, symbols="all", period: str = 'daily',
                 start_date=(datetime.today() - timedelta(100)).strftime("%Y-%m-%d"),
                 end_date=datetime.today().strftime("%Y-%m-%d"),
                 output_type=0):
@@ -47,6 +46,12 @@ class MarketData:
 
         try:
             output = None
+            
+            if type(symbols) == str:
+                symbols = symbols.toupper()
+            if type(symbols) == list:
+                symbols = [symbol.upper() for symbol in symbols]
+            
             if market in self.db_manager.__market_list__():
                 
                 if market.upper() == "BRVM":

@@ -67,6 +67,6 @@ class MarketRegistry():
         """Delete all from locale database."""
         
         self.db_manager.__delete_table__(["market","ticker"])
-        self.db_manager.__init__()
-        self.__setup_market__()
+        # self.db_manager.__init__()
+        # self.__setup_market__()
         

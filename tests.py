@@ -2,11 +2,16 @@ from marketflow.market_ticker import MarketTickers
 from marketflow.market_data import MarketData
 from marketflow.market_registry import MarketRegistry
 
-register = MarketRegistry()
-#register.purge()
+# register = MarketRegistry()
+# #register.purge()
+# print(register.market_list())
+# a = MarketTickers()
+# ticker = a.getTickers("BRVM")
+# print(ticker)
 
-a = MarketTickers()
-ticker = a.getTickers("BRVM")
+# b = MarketData()
+# data = b.getData("BRVM","all")
 
-b = MarketData()
-b.getData("BRVM",['BNBC.ci'])
+
+a = ["a", "b", "c"]
+print(a.())

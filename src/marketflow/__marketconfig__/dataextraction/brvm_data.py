@@ -1,15 +1,14 @@
-from marketflow.market_information import MarketInformation
 from marketflow.market_registry import MarketRegistry
+from marketflow.market_ticker import MarketTickers
 from marketflow.__db_manager__ import DBManager
 from bs4 import BeautifulSoup
 from datetime import datetime,timedelta
 from tabulate import tabulate
 import requests
-import numpy as np
 import pandas as pd
-import tqdm
 
 db_manager = DBManager()
+
 class MarketDataOutput:
     """
     A container class for storing and displaying extracted market data.
@@ -50,7 +49,7 @@ class MarketDataOutput:
 
 
 def __get_brvm_data__(market_shortname="BRVM",
-                    symbols=["ABJC.ci", "BICB.bj"],
+                    symbols ="all",
                     period: str = 'daily',
                     start_date=(datetime.today() - timedelta(100)).strftime("%Y-%m-%d"),
                     end_date=datetime.today().strftime("%Y-%m-%d")):
@@ -78,13 +77,18 @@ def __get_brvm_data__(market_shortname="BRVM",
     all_dataframe_col = None
     all_dataframes = None
     
-    market_list = db_manager.__market_list__()
-    ticker_list = []
+    registry_obj = MarketRegistry()
+    ticker_obj = MarketTickers()
+    
+    
+    market_list = registry_obj.market_list()
+    real_ticker_list = []
     
     if market_shortname in market_list:
-        ticker_list = db_manager.__ticker_list__(market_shortname)
+        ticker_obj.getTickers(market=market_shortname)
+        real_ticker_list = ticker_obj.__full_ticker_list__(market_shortname)
     else:
-        raise ValueError(f"[Error] This market '{period}' is not supported.")
+        raise ValueError(f"[Error] This market '{market_shortname}' is not supported.")
     
     period_map = {
         'daily': '0',
@@ -101,8 +105,8 @@ def __get_brvm_data__(market_shortname="BRVM",
     if not _end_date >= _start_date:
         raise ValueError(f"[Error] Invalid date.")
     else:
-        # conversion date range split période by 80 days
-        n = 80
+        # conversion date range split période by 85 days
+        n = 85
         
         val = _start_date
         while val <= _end_date:
@@ -115,31 +119,32 @@ def __get_brvm_data__(market_shortname="BRVM",
             if not (end_date in _range_date) and val > _end_date:
                 val = _end_date
             
-        
-        #print(_range_date_full)
-
-
-    
     if period in period_map:
         frequency = period_map[period.lower()]
     else:
         raise ValueError(f"[Error] the defined period '{period}' is not supported.")
+    
+    if type(symbols) == str:
+        if symbols.upper() == "ALL":
+            symbols = real_ticker_list
     
     first_full_data = True
     for symbol in symbols:
         data_symbol = {}
         first_data = True
         
-        if symbol in ticker_list:
-            
+        full_symbol = [symb for symb in real_ticker_list if symb.startswith(symbol)][0]
+        
+        if full_symbol in real_ticker_list:
+
             for row_period in _range_date_full:
                 response = requests.post(
                     url = url,
                     json = {
-                        "ticker": symbol,
+                        "ticker": full_symbol,
                         "datedeb": row_period[0],
                         "datefin": row_period[1],
-                        "xperiod": str(frequency)
+                        "xperiod": frequency
                     }
                 )
                 
@@ -162,7 +167,7 @@ def __get_brvm_data__(market_shortname="BRVM",
             
             if data_symbol[symbol].shape[0] > 0:  
                                     
-                print(f"Data extracted for {symbol} between {data_symbol[symbol].iloc[0,0]} - {data_symbol[symbol].iloc[-1,0]}.")  
+                print(f"Data extracted for {symbol.split('.')[0]} between {data_symbol[symbol].iloc[0,0]} - {data_symbol[symbol].iloc[-1,0]}.")  
 
                 data_symbol_row = pd.DataFrame(data_symbol[symbol])
                 data_symbol_col = pd.DataFrame(data_symbol[symbol])
@@ -189,7 +194,5 @@ def __get_brvm_data__(market_shortname="BRVM",
             
         if all_dataframe_row.shape[0] > 0:
             all_dataframes = MarketDataOutput(market=market_shortname,by_row=all_dataframe_row,by_col=all_dataframe_col)
-
-            
 
     return all_dataframes

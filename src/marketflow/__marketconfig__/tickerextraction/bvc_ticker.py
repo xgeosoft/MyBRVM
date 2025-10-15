@@ -1,10 +1,8 @@
 from marketflow.market_information import MarketInformation
 from marketflow.market_registry import MarketRegistry
 from bs4 import BeautifulSoup
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 import requests, certifi
-import re
 from tabulate import tabulate
 
 from marketflow.__db_manager__ import DBManager

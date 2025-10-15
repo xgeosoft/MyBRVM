@@ -1,14 +1,16 @@
 import sqlite3
+import os
+import importlib.resources as pkg_resources
 from pathlib import Path
 from marketflow.market_information import MarketInformation
-import importlib.resources as pkg_resources
 import marketflow.__data__
+
 
 class DBManager():
     
     def __init__(self):
         super().__init__()
-        self.db_path = pkg_resources.files(marketflow.__data__) / "database.db"
+        self.db_path = os.path.join(os.path.dirname(__file__), '__data__', 'database.db')
         self.__open_db__()
 
         # Table des marchés
@@ -31,6 +33,7 @@ class DBManager():
                 market_id INTEGER,
                 type TEXT,
                 symbol TEXT,
+                full_symbol TEXT,
                 description TEXT,
                 country TEXT,
                 FOREIGN KEY (market_id) REFERENCES market(id)
@@ -121,7 +124,7 @@ class DBManager():
         self.__close_db__()
         return rows
 
-    def __add_tickers__(self, shortname: str, type: str, symbol: str, description: str, country: str):
+    def __add_tickers__(self, shortname: str, type: str, symbol: str, full_symbol: str, description: str, country: str):
         """
         Add or update a ticker for a given market.
 
@@ -132,6 +135,7 @@ class DBManager():
             shortname (str): Shortname of the associated market.
             type (str): Type of ticker (e.g., stock, bond, index).
             symbol (str): The ticker symbol.
+            full_symbol (str): The full ticker symbol.
             description (str): A short description of the ticker.
             country (str): Country code where the ticker is listed.
         """
@@ -147,20 +151,22 @@ class DBManager():
             if ticker_obj == None:
                 self.cursor.execute(
                     """
-                    INSERT OR IGNORE INTO ticker (market_id,type,symbol,description,country) VALUES (?,?,?,?,?)
+                    INSERT OR IGNORE INTO ticker (market_id,type,symbol,full_symbol,description,country) VALUES (?,?,?,?,?,?)
                     """,
-                    (market_id,type,symbol,description,country,)
+                    (market_id,type,symbol,full_symbol,description,country,)
                 )
             else:
                 ticker_id = int(ticker_obj[0])
                 self.cursor.execute(
                     """
-                    UPDATE ticker SET market_id = ?, type = ?, symbol = ?,description = ?,country = ? WHERE id = ?
+                    UPDATE ticker SET market_id = ?, type = ?, symbol = ?,full_symbol = ?,description = ?,country = ? WHERE id = ?
                     """,
-                    (market_id,type,symbol,description,country,ticker_id,)
+                    (market_id,type,symbol,full_symbol,description,country,ticker_id,)
                 )
+            # print("Database updated successfully.")
             self.conn.commit()
         self.__close_db__()
+    
     
     def __get_tickers__(self, market_shortname: str):
         """
@@ -171,27 +177,64 @@ class DBManager():
 
         Returns:
             list[tuple]: A list of tuples containing ticker details:
-                (id, market_id, symbol, description, country).
+                (id, market_id, symbol, full_symbol, description, country).
         """
         self.__open_db__()
         self.cursor.execute("SELECT id FROM market WHERE shortname = ?",(market_shortname,))
         market_obj = self.cursor.fetchone()
+        rows = None
         
         if market_obj: # market exist
             market_id = int(market_obj[0])
             self.cursor.execute("""
-                SELECT id, market_id, symbol, description, country
+                SELECT id, market_id, symbol, full_symbol, description, country
                 FROM ticker WHERE market_id = ? ORDER BY symbol ASC
             """, (market_id,))
-            
             rows = self.cursor.fetchall()
-            return rows
+            
+        self.__close_db__()
+        return rows
 
     
-    
-    def __ticker_list__(self, market_shortname: str):
+    def __ticker_list__(self, market_shortname: str,type: str = "all"):
+        
         """
         Retrieve the list of ticker symbols for a given market.
+
+        Args:
+            market_shortname (str): Shortname of the market.
+
+        Returns:
+            list[str]: A sorted list of ticker symbols for the specified market.
+        """
+        self.__open_db__()
+        ticker_list = []
+        self.cursor.execute("SELECT id FROM market WHERE shortname = ?",(market_shortname,))
+        market_obj = self.cursor.fetchone()
+        
+        if market_obj != None: # market exist
+            market_id = int(market_obj[0])
+            
+            if type == "all":
+                self.cursor.execute(f"""
+                    SELECT symbol FROM ticker WHERE market_id = ? ORDER BY country ASC
+                """, (market_id,))
+            else:
+                self.cursor.execute(f"""
+                    SELECT symbol FROM ticker WHERE market_id = ? AND type = ? ORDER BY country ASC
+                """, (market_id,type,))
+                
+            rows = self.cursor.fetchall()
+            if rows:
+                ticker_list = [row[0] for row in rows]
+        
+        self.__close_db__()
+        return ticker_list
+    
+    
+    def __full_version_ticker_list__(self, market_shortname: str):
+        """
+        Retrieve the list of native ticker symbols for a given market.
 
         Args:
             market_shortname (str): Shortname of the market.
@@ -207,8 +250,7 @@ class DBManager():
         if market_obj: # market exist
             market_id = int(market_obj[0])
             self.cursor.execute("""
-                SELECT symbol
-                FROM ticker WHERE market_id = ? ORDER BY symbol ASC
+                SELECT full_symbol FROM ticker WHERE market_id = ? ORDER BY symbol ASC
             """, (market_id,))
             
             rows = self.cursor.fetchall()

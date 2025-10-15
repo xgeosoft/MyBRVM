@@ -20,6 +20,12 @@ from marketflow.market_ticker import MarketTickers
 from marketflow.market_data import MarketData
 ```
 
+Or simply with 
+
+```bash
+from marketflow import MarketRegistry, MarketTickers, MarketData
+```
+
 Initialize the registry (to manage cache / stored data)
 
 ```bash
@@ -38,6 +44,8 @@ print(brvm_tickers)
 Download market data (example: BRVM, ticker BNBC.ci)
 ```bash
 data = MarketData()
-brvm_data = data.getData("BRVM", ["BNBC.ci"])
+brvm_data = data.getData("BRVM", "all"])
+boab_data = data.getData("BRVM", "BOAB"])
+bicc_data = data.getData("BRVM", "BICC"])
 print(brvm_data.head())
 ```

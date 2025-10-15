@@ -1,1 +1,1 @@
-include src/marketflow/data/*.db
+include src/marketflow/__data__/*.db

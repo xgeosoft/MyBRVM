@@ -1,9 +1,7 @@
-from marketflow.market_information import MarketInformation
-from marketflow.market_registry import MarketRegistry
 from bs4 import BeautifulSoup
-from tabulate import tabulate
 import requests
 from marketflow.__db_manager__ import DBManager
+
 
 db_manager = DBManager()
 
@@ -17,8 +15,8 @@ def __get_tickers__(market_shortname="BRVM"):
        - Scrapes ticker information from `https://www.sikafinance.com/` using BeautifulSoup.  
        - Extracts both ticker symbol and description from the HTML select element `#dpShares`.  
        - Splits tickers into two categories:  
-         - INDEXES: Tickers starting with "BRVM".  
-         - SHARES: Regular company tickers (excluding "BRVM" and "SIKA").  
+         - INDEXES: Tickers starting with "BRVM".
+         - SHARES: Regular company tickers (excluding "BRVM" and "SIKA"). 
        - Saves the extracted tickers into the local database.  
        - Prints both categories in a formatted table.
 
@@ -45,7 +43,6 @@ def __get_tickers__(market_shortname="BRVM"):
     """
     url = "https://www.sikafinance.com/"
     all_tables = []
-    tickers_headers = ["ID","ID Market","Symbols","Description","Country Code"]
 
     # Étape 1 : tenter de récupérer via Internet
     try:
@@ -61,9 +58,9 @@ def __get_tickers__(market_shortname="BRVM"):
             if val:  # éviter l'option vide "Choisir une valeur"
                 val_split = val.split(".")
                 if len(val_split) == 2:
-                    values.append(["","",val, text, val_split[1].upper()])
+                    values.append(["","",val_split[0],val, text, val_split[1].upper()])
                 else:
-                    values.append(["","",val, text, ""])
+                    values.append(["","",val_split[0],val, text, ""])
 
         sorted_table = sorted(values, key=lambda x: x[2])
 
@@ -74,21 +71,16 @@ def __get_tickers__(market_shortname="BRVM"):
         all_tables.append(indexes)
         all_tables.append(shares)
 
-        # Sauvegarde dans la DB
+        # # Sauvegarde dans la DB
         for row in indexes:
-            db_manager.__add_tickers__(market_shortname, "INDEXES", row[2], row[3], row[4])
+            db_manager.__add_tickers__(market_shortname, "INDEX", row[2], row[3], row[4], row[5])
         for row in shares:
-            db_manager.__add_tickers__(market_shortname, "SHARES", row[2], row[3], row[4])
-
-        print("1 - INDEXES")
-        print(tabulate(indexes, tickers_headers, tablefmt="fancy_grid"))
-        print("2 - SHARES")
-        print(tabulate(shares, tickers_headers, tablefmt="fancy_grid"))
+            db_manager.__add_tickers__(market_shortname, "SHARE", row[2], row[3], row[4], row[5])
 
         return all_tables
 
     except Exception as e:
-        print(f"[WARN] Échec récupération web.")
+        print(f"[WARN] Web retrieval failure.")
 
     # Étape 2 : tenter de récupérer dans la DB locale
     try:
@@ -101,13 +93,11 @@ def __get_tickers__(market_shortname="BRVM"):
             all_tables.append(indexes)
             all_tables.append(shares)
 
-            print("1 - INDEXES (from local DB)")
-            print(tabulate(indexes, tickers_headers, tablefmt="fancy_grid"))
-            print("2 - SHARES (from local DB)")
-            print(tabulate(shares, tickers_headers, tablefmt="fancy_grid"))
-
         return all_tables
 
     except Exception as e:
-        print(f"[ERROR] Impossible de récupérer les tickers.")
+        print(f"[ERROR] Unable to retrieve tickers.")
         return []
+
+
+# __get_tickers__()
